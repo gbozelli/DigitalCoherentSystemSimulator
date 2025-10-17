@@ -1,7 +1,6 @@
-QAM_mod
-QAM_dem
-DAC_Nyquist
-QAM_transmitter
+
+
+#QAM_transmitter
 QAM_receiver
 QAM_receiver_DP
 single_frequency_laser
@@ -13,7 +12,7 @@ fiber
 EDFA
 constellation_analysis
 spectrum_analysis
-DPQAM_transmitter
+#DPQAM_transmitter
 QAM_receiver_DP
 DPQAM_receiver
 optical_filter
