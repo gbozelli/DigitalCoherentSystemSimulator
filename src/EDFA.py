@@ -28,7 +28,7 @@ def EDFA(s_in,t,G_edfa_dB,NF_dB,lambda0=1550e-9):
     s_outx = sx + s_ASEx
     s_outy = sy + s_ASEy
 
-    s = np.zeros((2,len(t)),dtype = np.complex_)
+    s = np.zeros((2,len(t)),dtype = np.complex128)
     s[0,:] = s_outx
     s[1,:] = s_outy
     return s

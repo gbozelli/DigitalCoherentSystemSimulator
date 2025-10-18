@@ -1,4 +1,5 @@
-
+import matplotlib.pyplot as plt
+import numpy as np
 # DAC_Nyquist: DAC considering Nyquist filtering
 def DAC_Nyquist(s=None,SpS=16,RollOff=0.2,plot_flag=False):
 

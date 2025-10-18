@@ -66,7 +66,7 @@ def QAM_transmitter(N_sync=128,sync_seed=0,\
 
     return [s_cont,t,s_b]
 
-def DPQAM_transmitter(M = 16, SpS = 16, RollOff = 0.2, ts = 1e-9, sync_seed_X=0,sync_seed_Y=123,\
+def DPQAM_transmitter(P_laser_TX,M = 16, SpS = 16, RollOff = 0.2, ts = 1e-9, sync_seed_X=0,sync_seed_Y=123,\
                            N_MIMO = 128,N_sync = 128,N_inf = 4096,N_zeros_init=10,N_zeros_final=10,Delta_nu=0,Freq_offset=0,\
                            ind_mod = 0.1, Splitter_IL=1.0,Upper_IL=2.0,Lower_IL=2.0,Combiner_IL=1.1,\
                            Vpi = 2.5, Vbias=2.5, plot_flag = False):
