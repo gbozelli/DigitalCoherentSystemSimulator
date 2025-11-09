@@ -5,11 +5,11 @@ from single_frequency_laser import single_frequency_laser
 from HybridNetwork import HybridNetwork
 from QAM_receiver_DP import QAM_receiver_DP
 
-def DPQAM_receiver(E_RXf,E_RX,t,M,SpS,N_inf,RollOff,ts, s_b, channel_id=None, power_dBm=None,
+def DPQAM_receiver(E_RX,t,M,SpS,N_inf,RollOff,ts, s_b, channel_id=None, power_dBm=None,
                    P_laser=0.01, Delta_nu=0, N_sync=256,
                    sync_seed_X=0, sync_seed_Y=123,
                    Freq_offset=0,
-                   plot_flag=False, BW=None, shot_noise=True,
+                   plot_flag=False, BW=10e9, shot_noise=True,
                    thermal_noise=True, L=0, D=0, R=0.9):
 
     #------------------------------------- Optical front-end --------------------------------------------%
