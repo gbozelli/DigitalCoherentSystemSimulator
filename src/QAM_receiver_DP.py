@@ -8,7 +8,7 @@ from QAM_dem import QAM_dem
 from constellation_analysis import constellation_analysis
 
 def QAM_receiver_DP(s,t,s_b,M,N_sync=128,N_MIMO=32,N_inf=4096,SpS=16,RollOff=0.2,sync_seed_X=0,sync_seed_Y=123,ts=1e-12,plot_flag=False,L=10e3,D=16e-6):
-    #print('The length is',L)
+#print('The length is',L)
     #print('The sipersion parameters is',D)
     s_in = s
     s_x = s[0,:]
@@ -26,7 +26,6 @@ def QAM_receiver_DP(s,t,s_b,M,N_sync=128,N_MIMO=32,N_inf=4096,SpS=16,RollOff=0.2
     S_nyq = np.zeros(N_samples,dtype=complex)
     ind_i = int(N_samples/2-N_sym/2)
     ind_f = int(ind_i+N_sym)
-    
     window = np.zeros(N_samples)
     window[ind_i:ind_f] = np.ones(ind_f-ind_i)
 
@@ -397,3 +396,4 @@ def QAM_receiver_DP(s,t,s_b,M,N_sync=128,N_MIMO=32,N_inf=4096,SpS=16,RollOff=0.2
     constellation_analysis(sx_inf_pc)
 
     return [s_inf, s_sync, s_inf_dn, BER, sx_inf_pc, sy_inf_pc]
+

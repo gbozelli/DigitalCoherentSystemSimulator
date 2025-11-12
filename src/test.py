@@ -1,7 +1,7 @@
 from QAM_transmitter import QAM_transmitter
 from QAM_receiver import QAM_receiver
-from QAM_receiver import QAM_receiver_DP
-from QAM_receiver import DPQAM_receiver
+from QAM_receiver_DP import QAM_receiver_DP
+from DPQAM_receiver import DPQAM_receiver
 from single_frequency_laser import single_frequency_laser
 from MZM import MZM
 from HybridNetwork import HybridNetwork
@@ -10,7 +10,7 @@ from fiber import fiber
 from EDFA import EDFA
 from constellation_analysis import constellation_analysis
 from spectrum_analysis import spectrum_analysis
-from QAM_transmitter import DPQAM_transmitter
+from DPQAM_transmitter import DPQAM_transmitter
 from optical_filter import optical_filter
 
 # -*- coding: utf-8 -*-
@@ -79,7 +79,7 @@ SoP_rotation = True   # Activate SoP rotation
 
 G_edfa_dB = 26
 NF_dB = 5
-t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
+t, E_TX, E_carrier, s_tx, const_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
                 ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
                 N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
                 plot_flag = False)
@@ -91,9 +91,9 @@ E_amp = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
 E_RX = fiber(E_amp,t,L,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
 
 # Optical receiver
-BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = False, shot_noise = True, thermal_noise = True,L=L,D=D)
-print('The BER of the X component is:',BER[0])
+BER = DPQAM_receiver(E_RX,t,M,SpS,N_inf,RollOff,ts, s_b, P_laser = P_laser_RX,channel_id=1, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,
+                         Freq_offset = Freq_offset_RX, \
+                         plot_flag = True, BW=BaudRate*0.75, shot_noise = True, thermal_noise = True,L=L,D=D)
 print('The BER of the Y component is:',BER[1])
 
 
@@ -102,516 +102,108 @@ print('The BER of the Y component is:',BER[1])
 
 plt.close('all')
 
-# General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 4*14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol peiod in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096           # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
-
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_TX = 75e9     # Offset frequency of the transmitter laser in Hz
-Freq_offset_RX = 55e6+75e9  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
-
-L = 120e3             # Fiber length in [m]
-alpha_dB = 0.2e-3     # Fiber attenuation in dB/m
-D = 16e-6             # Dispersion in [s/m^2]
-n2= 2.6e-20           # Nonlinear coeffient in m^2/W
-DeltaL = 1e3          # Fiber segment in m
-lambda0 = 1550e-9     # Nominal wavelength in m
-Aeff = 80e-12         # Effective modal area in m^2
-SoP_rotation = True   # Activate SoP rotation
-#G_edfa_dB = 24
-NF_dB = 5
-P_LOP = 0.002          # Launch optical power in W
-
-t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
-                plot_flag = True)
-
-# Visualization of the spectrum
-spectrum_analysis(E_TX[0,:],t)
-
-P_aux = np.mean((np.abs(E_TX[0,:]))**2)+np.mean((np.abs(E_TX[1,:]))**2)
-#G_edfa = P_LOP/P_aux
-G_edfa_dB = 10*np.log10(P_LOP/P_aux)
-print('The required gain is:',G_edfa_dB,'dB')
-E_LOP = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-P_aux_1 = np.mean((np.abs(E_LOP[0,:]))**2)+np.mean((np.abs(E_LOP[1,:]))**2)
-#print(P_aux_1)
-
-# Channel
-E_RX = fiber(E_LOP,t,L,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
-
-# Optical receiver
-BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = True, shot_noise = True, thermal_noise = True,L=L,D=D)
-print('The BER of the X component is:',BER[0])
-print('The BER of the Y component is:',BER[1])
-
-
-
-"""Ex. 2: Make a sweep on the launched optical power and find the optimum power level. Explain the behavior."""
-
 plt.close('all')
 
+# ========================
 # General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 4*14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol period in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096         # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
+# ========================
+M = 16
+SpS = 16
+RollOff = 0.2
+BaudRate = 56e9
+Tsym = 1 / BaudRate
+ts = Tsym / SpS
+N_zeros_init = 100
+N_sync = 256
+N_inf = 2048
+N_zeros_final = 100
+sync_seed_X = 0
+sync_seed_Y = 123
 
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_TX = 0     # Offset frequency of the transmitter laser in Hz
-Freq_offset_RX = 55e6  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
+# ========================
+# Optical System Parameters
+# ========================
+P_laser_TX = 0.01      # W
+Delta_nu_TX = 0*100e3
+P_laser_RX = 0.01      # W
+Delta_nu_RX = 0*100e3
+Freq_offset_TX = 0
+Freq_offset_RX = 0
+ind_mod = 0.1
 
-L = 100e3              # Fiber length in [m]
-alpha_dB = 0.2e-3      # Fiber attenuation in dB/m
-D = 16e-6              # Dispersion in [s/m^2]
-n2= 2.6e-20            # Nonlinear coeffient in m^2/W
-DeltaL = 1e3           # Fiber segment in m
-lambda0 = 1550e-9      # Nominal wavelength in m
-Aeff = 80e-12          # Effective modal area in m^2
-SoP_rotation = True    # Activate SoP rotation
-#G_edfa_dB = 24
+L = 80e3
+alpha_dB = 0.2e-3
+D = 16e-6
+n2 = 2.6e-20
+DeltaL = 1e3
+lambda0 = 1550e-9
+Aeff = 80e-12
+SoP_rotation = False
 NF_dB = 5
 
-#P_LOP_array = np.arange(0.001,0.01,0.00025)     # Launch optical power in W
-P_LOP_array = np.arange(0.001,0.01,0.001)     # Launch optical power in W
+# ========================
+# Sweep Parameters
+# ========================
+P_dBm_array = np.arange(0, 13, 1)       # 0 a 12 dBm
+P_W_array = 1e-3 * 10**(P_dBm_array/10) # conversão para W
+BER_X = np.zeros(len(P_dBm_array))
+BER_Y = np.zeros(len(P_dBm_array))
 
-BER_X_array = np.zeros(np.shape(P_LOP_array))
-BER_Y_array = np.zeros(np.shape(P_LOP_array))
-for counter, P_LOP in enumerate(P_LOP_array):
-    print('Processing',counter,'of',len(P_LOP_array))
-    plt.close('all')
-    t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
-                plot_flag = True)
-    # Visualization of the spectrum
-    #spectrum_analysis(E_TX[0,:],t)
-    P_aux = np.mean((np.abs(E_TX[0,:]))**2)+np.mean((np.abs(E_TX[0,:]))**2)
-    G_edfa_dB = 10*np.log10(P_LOP/P_aux)
-    print('The required gain is:',G_edfa_dB,'dB')
-    E_LOP = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
+# ========================
+# Sweep Loop
+# ========================
+for i, P_target in enumerate(P_W_array):
 
-    # Channel
-    E_RX = fiber(E_LOP,t,L,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
+    print(f"\n=== Potência alvo: {P_dBm_array[i]:.1f} dBm ===")
 
-    # Optical receiver
-    BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = False, shot_noise = True, thermal_noise = True,L=L,D=D)
-    print('\tThe BER of the X component is:',BER[0])
-    print('\tThe BER of the Y component is:',BER[1])
-    BER_X_array[counter] = BER[0]
-    BER_Y_array[counter] = BER[1]
+    # Transmissor
+    t, E_TX, E_carrier, s_tx, const_tx, s_b = DPQAM_transmitter(P_laser_TX,
+        M=M, SpS=SpS, RollOff=RollOff, ts=ts,
+        sync_seed_X=sync_seed_X, sync_seed_Y=sync_seed_Y,
+        inf_seed_X=45, inf_seed_Y=46,
+        N_sync=N_sync, N_inf=N_inf,
+        N_zeros_init=N_zeros_init, N_zeros_final=N_zeros_final,
+        ind_mod=ind_mod, Delta_nu=Delta_nu_TX, Freq_offset=Freq_offset_TX,
+        plot_flag=False
+    )
+
+    # Calcula o ganho do EDFA necessário para atingir a potência alvo
+    P_aux = np.mean(np.abs(E_TX[0,:])**2) + np.mean(np.abs(E_TX[1,:])**2)
+    G_edfa_dB = 10 * np.log10(P_target / P_aux)
+    #Poderiamos usar isso para ser das duas polarizações
+    #P_aux = np.mean(np.abs(E_TX[0,:])**2)  # só uma polarização
+    #G_edfa_dB = 10 * np.log10(P_target / P_aux)
+
+
+    # Amplificação e transmissão
+    E_amp = EDFA(E_TX, t, G_edfa_dB, NF_dB, lambda0=lambda0)
+    E_RX = fiber(E_amp, t, L, DeltaL, D, lambda0, alpha_dB, n2, Aeff, SoP_rotation)
+
+    # Recepção
+    BER, const_rx = DPQAM_receiver(
+        E_RX,t,M,SpS,N_inf,RollOff,ts, s_b,
+        P_laser=P_laser_RX, Delta_nu=Delta_nu_RX,
+        N_sync=N_sync, sync_seed_X=sync_seed_X, sync_seed_Y=sync_seed_Y,
+        Freq_offset=Freq_offset_RX, plot_flag=False,
+        BW=BaudRate*0.75, shot_noise=True, thermal_noise=True,
+        L=L, D=D
+    )
+
+    # Armazena os BERs médios
+    BER_X[i] = BER[0]
+    BER_Y[i] = BER[1]
+
+    print(f"BER_X = {BER[0]:.3e} | BER_Y = {BER[1]:.3e}")
+
+# ========================
+# Plot BER vs Potência
+# ========================
 plt.figure()
-plt.plot(BER_X_array)
-plt.plot(BER_Y_array)
+plt.semilogy(P_dBm_array, BER_X, 'o-', label='Polarização X')
+plt.semilogy(P_dBm_array, BER_Y, 's-', label='Polarização Y')
+plt.xlabel("Potência de Lançamento (dBm)")
+plt.ylabel("BER")
+plt.title("Curva BER × Potência de Lançamento (1 Canal DP-16QAM)")
+plt.grid(True, which='both')
+plt.legend()
 plt.show()
-plt.figure()
-plt.plot(BER_X_array)
-plt.plot(BER_Y_array)
-plt.plot((BER_X_array+BER_Y_array)/2)
-plt.xscale('log')
-plt.yscale('log')
-plt.show()
-
-
-'''Example 4: '''
-
-plt.close('all')
-
-# General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 4*14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol period in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096         # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
-
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_RX = 55e6  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
-
-# Fiber parameters
-L = 150e3              # Fiber length in [m]
-alpha_dB = 0.2e-3      # Fiber attenuation in dB/m
-D = 16e-6              # Dispersion in [s/m^2]
-n2= 2.6e-20            # Nonlinear coeffient in m^2/W
-DeltaL = 1e3           # Fiber segment in m
-lambda0 = 1550e-9      # Nominal wavelength in m
-Aeff = 80e-12          # Effective modal area in m^2
-SoP_rotation = True    # Activate SoP rotation
-#G_edfa_dB = 24
-NF_dB = 5
-
-# Frequency parameters
-delta_f = 75e9
-Freq_offset_TX0 = -3*delta_f/2
-Freq_offset_TX1 = -delta_f/2
-Freq_offset_TX2 = delta_f/2
-Freq_offset_TX3 = 3*delta_f/2
-
-Freq_offset_RX = 55e6
-Freq_offset_RX0 = Freq_offset_TX0+Freq_offset_RX
-Freq_offset_RX1 = Freq_offset_TX1+Freq_offset_RX
-Freq_offset_RX2 = Freq_offset_TX2+Freq_offset_RX
-Freq_offset_RX3 = Freq_offset_TX3+Freq_offset_RX
-
-t, E_TX_0, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX0,\
-                plot_flag = True)
-
-t, E_TX_1, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX1,\
-                plot_flag = True)
-
-t, E_TX_2, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX2,\
-                plot_flag = True)
-
-t, E_TX_3, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX3,\
-                plot_flag = True)
-
-E_TX = E_TX_0+E_TX_1+E_TX_2+E_TX_3
-
-# Visualization of the spectrum
-spectrum_analysis(E_TX[0,:],t)
-
-E_RX = fiber(E_TX,t,L,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output fielf
-
-spectrum_analysis(E_RX[0,:],t)
-
-print(t)
-
-# test label
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#spectrum_analysis(E_RX[0,:],t)
-
-#E_RXf = optical_filter(E_RX,t,f0=-3/2*75e9,BW=75e9)
-#spectrum_analysis(E_RXf[0,:],t)
-
-#E_RXf = optical_filter(E_RX,t,f0=-1/2*75e9,BW=75e9)
-#spectrum_analysis(E_RXf[0,:],t)
-
-#E_RXf = optical_filter(E_RX,t,f0=1/2*75e9,BW=75e9)
-#spectrum_analysis(E_RXf[0,:],t)
-
-#E_RXf = optical_filter(E_RX,t,f0=3/2*75e9,BW=75e9)
-#spectrum_analysis(E_RXf[0,:],t)
-
-# Optical receiver channel 1
-
-#E_RXf = optical_filter(E_RX,t,f0=Freq_offset_RX0,BW=75e9)
-#spectrum_analysis(E_RXf[0,:],t)
-
-
-
-
-
-
-
-
-
-
-# Optical receiver
-BER0 = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX0, \
-                     plot_flag = True, shot_noise = True, thermal_noise = True,L=L,D=D)
-print('\tThe BER of the X component is (channel 0):',BER0[0])
-print('\tThe BER of the Y component is (channel 0):',BER0[1])
-
-plt.figure()
-plt.semilogy(P_LOP_array*1000,BER_X_array)
-plt.semilogy(P_LOP_array*1000,BER_Y_array)
-plt.semilogy(P_LOP_array*1000,(BER_X_array+BER_Y_array)/2)
-plt.xlabel('Launched optical power [mW]')
-plt.ylabel('BER')
-plt.show()
-
-"""Ex. 3: Make a sweep on the length of the fiber and find the maximum achievable length to ensure a BER of $10^{-3}$."""
-
-plt.close('all')
-
-# General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol peiod in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096           # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
-
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_TX = 0     # Offset frequency of the transmitter laser in Hz
-Freq_offset_RX = 55e6  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
-
-alpha_dB = 0.2e-3     # Fiber attenuation in dB/m
-D = 16e-6             # Dispersion in [s/m^2]
-n2= 2.6e-20           # Nonlinear coeffient in m^2/W
-DeltaL = 1e3          # Fiber segment in m
-lambda0 = 1550e-9     # Nominal wavelength in m
-Aeff = 80e-12         # Effective modal area in m^2
-SoP_rotation = True   # Activate SoP rotation
-#G_edfa_dB = 24
-NF_dB = 5
-P_LOP = 0.004         # LOP obtained from the previous code
-
-L_array = np.arange(100e3,210e3,10e3)     # Launch optical power in W
-BER_X_array_L = np.zeros(np.shape(L_array))
-BER_Y_array_L = np.zeros(np.shape(L_array))
-for counter, L in enumerate(L_array):
-    print('Processing',counter,'of',len(L_array))
-    plt.close('all')
-    t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
-                plot_flag = True)
-    # Visualization of the spectrum
-    #spectrum_analysis(E_TX[0,:],t)
-    P_aux = np.mean((np.abs(E_TX[0,:]))**2)+np.mean((np.abs(E_TX[0,:]))**2)
-    G_edfa_dB = 10*np.log10(P_LOP/P_aux)
-    print('The required gain is:',G_edfa_dB,'dB')
-    E_LOP = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-
-    # Channel
-    E_RX = fiber(E_LOP,t,L,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
-
-    # Optical receiver
-    BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = False, shot_noise = True, thermal_noise = True,L=L,D=D)
-    print('\tThe BER of the X component is:',BER[0])
-    print('\tThe BER of the Y component is:',BER[1])
-    BER_X_array_L[counter] = BER[0]
-    BER_Y_array_L[counter] = BER[1]
-
-plt.figure()
-plt.semilogy(L_array/1000,BER_X_array_L)
-plt.semilogy(L_array/1000,BER_Y_array_L)
-plt.xlabel('Link length [km]')
-plt.ylabel('BER')
-plt.grid('on')
-plt.show()
-
-"""Ex. 4: Extend the code to consider a multi-span link."""
-
-plt.close('all')
-
-# General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol peiod in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096           # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
-
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_TX = 0     # Offset frequency of the transmitter laser in Hz
-Freq_offset_RX = 55e6  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
-
-alpha_dB = 0.2e-3     # Fiber attenuation in dB/m
-D = 16e-6             # Dispersion in [s/m^2]
-n2= 2.6e-20           # Nonlinear coeffient in m^2/W
-DeltaL = 1e3          # Fiber segment in m
-lambda0 = 1550e-9     # Nominal wavelength in m
-Aeff = 80e-12         # Effective modal area in m^2
-SoP_rotation = True   # Activate SoP rotation
-#G_edfa_dB = 24
-NF_dB = 5
-P_LOP = 0.002          # Launch optical power in W
-
-N_span = 5
-L_span = 50e3
-L = N_span*L_span
-
-t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
-                plot_flag = True)
-# Visualization of the spectrum
-#spectrum_analysis(E_TX[0,:],t)
-P_aux = np.mean((np.abs(E_TX[0,:]))**2)+np.mean((np.abs(E_TX[0,:]))**2)
-G_edfa_dB = 10*np.log10(P_LOP/P_aux)
-print('The required gain is:',G_edfa_dB,'dB')
-E_TX = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-
-# Multispan channel
-E_inline = E_TX
-G_edfa_dB = alpha_dB*L_span
-
-print(G_edfa_dB)
-
-for aux in range(N_span):
-    print('Signal propagation in span number',aux)
-    E_inline = fiber(E_inline,t,L_span,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
-    E_inline = EDFA(E_inline,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-E_RX = E_inline
-
-# Optical receiver
-BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = True, shot_noise = True, thermal_noise = True,L=L,D=D)
-print('The BER of the X component is:',BER[0])
-print('The BER of the Y component is:',BER[1])
-
-plt.close('all')
-
-# General Parameters
-M = 16                 # Number of points in the constellation
-SpS = 16               # Number of samples per symbol
-RollOff = 0.2          # Roll-off factor
-BaudRate = 14e9        # Baudrate in Sps
-Tsym = 1/BaudRate      # Symbol peiod in s
-ts = Tsym/SpS          # Sampling peiod
-N_zeros_init = 100     # Number of initial zeros
-N_sync = 256           # Number of synchronization symbols
-N_inf = 4*4096           # Number of information symbols (payload)
-N_zeros_final = 100    # Number of final zeros
-sync_seed_X=0          # Seed for the X polarization
-sync_seed_Y=123        # Seed for the Y polarization
-
-# Configuration of the optical blocks
-P_laser_TX = 0.01      # Transmitter laser power in W
-Delta_nu_TX = 100e3    # Transmitter laser linewidth in Hz
-P_laser_RX = 0.01      # Transmitter laser power in W
-Delta_nu_RX = 100e3    # Transmitter laser linewidth in Hz
-Freq_offset_TX = 0     # Offset frequency of the transmitter laser in Hz
-Freq_offset_RX = 55e6  # Offset frequency of the transmitter laser in Hz
-ind_mod = 0.1          # Modulation index
-
-alpha_dB = 0.2e-3     # Fiber attenuation in dB/m
-D = 16e-6             # Dispersion in [s/m^2]
-n2= 2.6e-20           # Nonlinear coeffient in m^2/W
-DeltaL = 1e3          # Fiber segment in m
-lambda0 = 1550e-9     # Nominal wavelength in m
-Aeff = 80e-12         # Effective modal area in m^2
-SoP_rotation = True   # Activate SoP rotation
-#G_edfa_dB = 24
-NF_dB = 5
-P_LOP = 0.002          # Launch optical power in W
-
-N_span = 7
-L_span = 40e3
-L = N_span*L_span
-
-t, E_TX, E_carrier, s_tx, s_b = DPQAM_transmitter(P_laser_TX,M = M, SpS = SpS, RollOff = RollOff, \
-                ts = ts, sync_seed_X=0,sync_seed_Y=123,N_sync = 256,N_inf = N_inf,N_zeros_init=N_zeros_init,\
-                N_zeros_final=N_zeros_final,ind_mod = ind_mod,Delta_nu=Delta_nu_TX,Freq_offset=Freq_offset_TX,\
-                plot_flag = True)
-# Visualization of the spectrum
-#spectrum_analysis(E_TX[0,:],t)
-P_aux = np.mean((np.abs(E_TX[0,:]))**2)+np.mean((np.abs(E_TX[0,:]))**2)
-G_edfa_dB = 10*np.log10(P_LOP/P_aux)
-print('The required gain is:',G_edfa_dB,'dB')
-E_TX = EDFA(E_TX,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-
-# Multispan channel
-E_inline = E_TX
-G_edfa_dB = alpha_dB*L_span
-
-print(G_edfa_dB)
-BER_X_span = np.zeros(N_span)
-BER_Y_span = np.zeros(N_span)
-for counter, aux in enumerate(range(N_span)):
-    print('Signal propagation in span number',aux)
-    E_inline = fiber(E_inline,t,L_span,DeltaL,D,lambda0,alpha_dB,n2,Aeff,SoP_rotation) # Output field
-    E_inline = EDFA(E_inline,t,G_edfa_dB,NF_dB,lambda0=1550e-9)
-    E_RX = E_inline
-
-    # Optical receiver
-    BER = DPQAM_receiver(E_RX,E_TX,t,RollOff,ts,M,SpS,N_inf,s_b, P_laser = P_laser_RX, Delta_nu = Delta_nu_RX, N_sync = N_sync, sync_seed_X=0,sync_seed_Y=123,Freq_offset = Freq_offset_RX, \
-                     plot_flag = True, shot_noise = True, thermal_noise = True,L=L_span*(aux+1),D=D)
-    print('The BER of the X component is:',BER[0])
-    print('The BER of the Y component is:',BER[1])
-    BER_X_span[counter] = BER[0]
-    BER_Y_span[counter] = BER[1]
-
-plt.figure()
-plt.semilogy(np.arange(N_span)+1,BER_X_span)
-plt.semilogy(np.arange(N_span)+1,BER_Y_span)
-plt.xlabel('Number of spans')
-plt.ylabel('BER')
-plt.grid('on')
-plt.show()
-

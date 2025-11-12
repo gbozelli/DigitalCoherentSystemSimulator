@@ -48,7 +48,7 @@ def DPQAM_receiver(E_RX,t,M,SpS,N_inf,RollOff,ts, s_b, channel_id=None, power_dB
     s_inf, s_sync, s_inf_dn, BER, sx_inf_pc, sy_inf_pc = QAM_receiver_DP(
         s_rec, t=t, M=M, SpS=SpS, N_sync=N_sync, N_inf=N_inf,
         sync_seed_X=0, sync_seed_Y=123, RollOff=RollOff, ts=ts, s_b=s_b,
-        plot_flag=plot_flag, L=L, D=D
+        plot_flag=False, L=L, D=D
     )
 
     const_rx = np.zeros((2,len(sx_inf_pc)),dtype=complex)
@@ -57,3 +57,4 @@ def DPQAM_receiver(E_RX,t,M,SpS,N_inf,RollOff,ts, s_b, channel_id=None, power_dB
 
     #Antes estava apenas return BER
     return [BER, const_rx]
+
