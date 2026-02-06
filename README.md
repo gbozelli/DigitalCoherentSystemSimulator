@@ -1,4 +1,4 @@
-# Digital Coherent System Simulator — Core Source (`src`)
+# Digital Coherent System Simulator
 
 A modular **digital coherent communication system simulator** implemented in Python.  
 This project provides an end-to-end simulation framework for baseband digital signal processing (DSP) chains used in modern coherent communication systems, with emphasis on performance evaluation and research-oriented experimentation.
