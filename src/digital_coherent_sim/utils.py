@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import importlib
 import pathlib
+from functools import lru_cache
 
 import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
+@lru_cache(maxsize=32)
 def load_legacy_module(module_name: str):
     return importlib.import_module(f"{ROOT.name}.{module_name}")
 
