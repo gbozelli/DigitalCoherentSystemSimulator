@@ -16,9 +16,12 @@ class EDFAAmplifier:
         BW_sim = fs
 
         G_edfa = 10 ** (G_edfa_dB / 10)
-        sx = np.sqrt(G_edfa) * s_in[0]
-        sy = np.sqrt(G_edfa) * s_in[1]
+        sx = s_in[0]
+        sy = s_in[1]
         N = len(sx)
+
+        sx = np.sqrt(G_edfa) * sx
+        sy = np.sqrt(G_edfa) * sy
 
         F_n = 10 ** (NF_dB / 10)
         n_sp = F_n / 2
