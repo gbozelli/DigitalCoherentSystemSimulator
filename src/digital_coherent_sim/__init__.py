@@ -5,10 +5,10 @@ from __future__ import annotations
 import pathlib
 import sys
 
-from .channel import EDFA, OpticalFiber
+from .channels import EDFA, OpticalFiber
 from .graphics import spectrum_analysis
-from .receiver import DPQAMReceiver
-from .transmitter import DPQAMTransmitter
+from .rx import DPQAMReceiver
+from .tx import DPQAMTransmitter
 
 SRC_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(SRC_ROOT) not in sys.path:
